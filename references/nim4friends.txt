@@ -495,3 +495,24 @@ Categories (add new as needed):
   test that does `import <pkg>` fails with "cannot open file: <pkg>". Fix:
   import the library from the test via a relative path (`import ../src/<pkg>`),
   or add a custom `test` task that passes `--path:src`.
+
+[nimble] `bin` field needs `@["..."]` (seq), not `["..."]` (array) (Nim 2.2.4)
+  In a .nimble file, `bin = ["name"]` fails at NimScript evaluation with
+  "type mismatch: got 'array[0..0, string]' for '["name"]' but expected
+  'seq[string]'". The `bin` field is typed `seq[string]`, and `["..."]` is
+  an array literal in Nim, not a seq. Use the `@` prefix:
+    bin = @["seconds_to"]
+  The error message says "Evaluating as NimScript file failed" and points
+  at the `bin` line — one-character fix.
+
+[idiom] Move `when isMainModule`-only imports inside the block (Nim 2.2.4)
+  A top-level `import std/os` used only for `commandLineParams` inside
+  `when isMainModule:` triggers "Warning: imported and not used: 'os'
+  [UnusedImport]" when the file is imported (e.g. from tests), because the
+  `when` block isn't compiled in that context but the import is. Fix: move
+  the import inside the `when isMainModule:` block — Nim allows `import`
+  inside `when`, and it's only resolved when the file is the main module:
+    when isMainModule:
+      import std/os
+      let params = commandLineParams()
+  Keeps the library build warning-free and the CLI build functional.
