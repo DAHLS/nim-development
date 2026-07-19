@@ -327,14 +327,6 @@ Categories (add new as needed):
   type), so you can keep a type private while its constructor proc is
   public.
 
-[idiom] Named constants in a central config module
-  Tunable values (timeouts, sizes, colors, thresholds) belong as
-  `ConstPascalCase*` constants in a central `config.nim`-style module.
-  Bare magic numbers in logic (`180000`, `41000.0`, `1200`,
-  `3.0/4.0`) are maintenance hazards — a future change to one instance
-  won't propagate to the others, and some encode coupling (e.g. a
-  hardcoded aspect ratio that should derive from canvas dimensions).
-
 [idiom] `defer` for resource cleanup
   `defer: discard h5f.close()` runs when the proc exits (normally or
   via exception). Use for file handles, connections, locks. Equivalent
@@ -345,13 +337,6 @@ Categories (add new as needed):
   declare it — Nim creates it automatically. `result = X` at the top
   level of a proc sets the return. `result.add(x)` appends to a
   `seq` return. Don't also use `return X` — pick one style per proc.
-
-[idiom] Module split over single-file for >500 lines
-  Nim's import system makes cross-module calls explicit. Splitting into
-  modules (e.g. `config`, `geo`, `render`, `radar`) gives: (a) clean
-  boundaries — no accidental reach into private state; (b) incremental
-  compile caching per file; (c) separation of concerns. For a 1,400+
-  line project, 10–12 small modules beats one megafile.
 
 [idiom] `proc` with `var` params for in-place mutation
   `proc foo(x: var int)` mutates the caller's variable. Use when you
@@ -366,16 +351,12 @@ Categories (add new as needed):
   relative to the source file (hence `../` from `src/`). At runtime,
   parse from the string — no file I/O. Makes the binary self-contained.
 
-[idiom] nimpretty reformats in place; verify formatting via diff (no --verify flag)
-  `nim check --styleCheck:error` flags naming conventions (e.g. `'R' should
-  be 'r'` for object fields). `nimpretty` has **no `--verify` flag** in Nim
-  2.x — its only options are help/version/output/outDir/indent/maxLineLen/
-  stdin — and it rewrites files in place. To verify formatting WITHOUT
+[idiom] nimpretty reformats in place; verify formatting via diff
+  `nimpretty` rewrites files in place. To verify formatting WITHOUT
   modifying, format a temp copy and `diff` it against the original
-  (non-empty diff ⇒ not canonical); or run `nimpretty src/*.nim` and review
-  the diff. Run `nimpretty src/*.nim` (format) and `nim check
-  --styleCheck:error` (naming) as CI gates — they catch different things,
-  use both.
+  (non-empty diff ⇒ not canonical); or run `nimpretty src/*.nim` and
+  review the diff. Pair with `nim check --styleCheck:error` (naming) as
+  CI gates — they catch different things, use both.
 
 [footgun] `parseopt` doesn't handle `--flag value` (space-separated) cleanly
   Nim's `parseopt` handles `--flag=value` but the value in
