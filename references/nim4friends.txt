@@ -1,0 +1,454 @@
+# Nim Notes for LLM Ingestion
+# ─────────────────────────────
+# Persistent memory of Nim gotchas, idioms, and lessons learned from
+# real projects, maintained across many LLM sessions and models.
+#
+# READING: when a task involves Nim, read this file fully — it is
+# short. Apply entries proactively; the point is to not be bitten
+# twice. When debugging, grep for the [category] tag and your error
+# text.
+#
+# ADDING an entry:
+# 1. Evidence — add only what you observed this session (an error, a
+#    wrong result, a crash) or verified by a targeted experiment.
+#    Never from docs or inference alone.
+# 2. Gate — if you can't name the specific Nim API, type, or flag,
+#    you have a principle, not a lesson; principles (DRY, "test your
+#    math", "avoid hardcoded paths") don't belong here. ([idiom]
+#    entries must still name a Nim construct.)
+# 3. Generalization — strip project/domain references (file names,
+#    endpoints, business terms); preserve the Nim mechanism (library,
+#    signature, type, flag, literal error text — the error string is
+#    the next debugger's grep key).
+# 4. Shape — [tag] one-line title → trap → symptom → fix, with the
+#    minimal snippet showing the fix. Aim for ≤15 lines.
+# 5. Placement — grep for the API/flag first. If an entry on it
+#    exists, extend it by reference ("extends the X entry") instead of
+#    duplicating. Otherwise append at the end of the file. Position
+#    carries no meaning; the [tag] is the retrieval key, not layout.
+# 6. Versioning — note the Nim version when behavior is
+#    version-dependent (e.g. "Nim 2.0+").
+#
+# EDITING existing entries:
+# - If an entry is factually wrong (the API, flag, or fix does not
+#   work as stated), correct it in place — accuracy beats append-only.
+#   Keep the correction minimal and factual; do not rewrite style.
+# - All other edits are forbidden: no reordering, reformatting,
+#   condensing, or deleting entries you merely disagree with.
+
+Categories (add new as needed):
+  [build]       Compile flags, build script issues
+  [ambiguity]   Name/symbol collisions between modules
+  [pixie]       pixie 2D graphics library
+  [arraymancer] Arraymancer tensor library
+  [nimhdf5]     nimhdf5 HDF5 wrapper
+  [times]       std/times module
+  [json]        std/json module
+  [http]        std/httpclient module
+  [os]          std/os module
+  [exn]         Exception model and `except` handlers
+  [idiom]       Style/convention lessons
+  [footgun]     Silent surprises that cost a debug cycle
+
+[build] `-d:ssl` for HTTPS, `-d:H5_FUTURE` for HDF5 1.14+
+  Nim's stdlib HTTP client excludes SSL by default — pass `-d:ssl` at
+  compile time to link OpenSSL. Any HTTPS API will fail without it.
+  Similarly, nimhdf5 on HDF5 1.14+ needs `-d:H5_FUTURE` to use versioned
+  `H5Oget_info2` symbols; without it the binary compiles but crashes at
+  runtime with "could not import: H5Oget_info".
+
+[build] `-d:release` keeps runtime checks (bounds/overflow)
+  `-d:release` in Nim does NOT disable bounds checks or overflow checks
+  (unlike Rust's `--release`). It enables C-compiler optimization but
+  keeps the safety checks. For unattended/cron-automated code parsing
+  untrusted network data, a logged IndexDefect beats a silent segfault.
+  Only `-d:danger` or `--checks:off` strip the checks.
+
+[build] `--cpu:i386` on Linux doesn't pass `-m32` to gcc
+  Nim's `config/nim.cfg` has handling for Windows i386 targets (it
+  switches to `i686-w64-mingw32-gcc`), but NO handling for Linux i386.
+  `--cpu:i386` only changes Nim's C codegen (pointer sizes, `int` =
+  32 bits in the generated C) — the gcc invocation is untouched and
+  still compiles 64-bit objects. You get 64-bit objects from 32-bit-
+  assuming C source: garbage or link errors. Fix: pass `-m32` to both
+  compile and link explicitly:
+    nim c --cpu:i386 --passC:"-m32" --passL:"-m32" ...
+  `--passC` appends to the gcc compile line (preferable to
+  `--gcc.options.always:"-m32"`, which replaces the default
+  `-w -fmax-errors=3`); `--passL` adds it to the link line.
+
+[build] Separate `--nimcache` per target when cross-compiling
+  Both 32-bit and 64-bit builds write to the same default cache
+  directory. Mixing runs while experimenting with `--cpu:i386` vs
+  the native target produces "skipping incompatible library" /
+  wrong-arch object weirdness that looks like flags not being
+  applied. Give each target its own cache:
+    --nimcache:nimcache/amd64    # for 64-bit
+    --nimcache:nimcache/i386     # for 32-bit
+  This eliminates a whole failure class that masquerades as
+  flag problems.
+
+[ambiguity] `isNaN` collides between `std/math` and `vmath`
+  Both export `isNaN`. In modules that import `pixie` (which re-exports
+  `vmath`), calling `.isNaN` is ambiguous and Nim can't resolve it.
+  Workaround: `x != x` (NaN is the only float not equal to itself).
+  In modules that don't import pixie, `.isNaN` works fine — the
+  ambiguity only appears when both `std/math` and `vmath` are visible.
+  Deliberate policy: use `.isNaN` where you can, `!= v` where you must.
+
+[ambiguity] `Context` collides between pixie and arraymancer
+  pixie's `Context` (2D canvas) and arraymancer's
+  `autograd_common.Context` (computational graph) are both named
+  `Context`. Bare `Context` is ambiguous when both libraries are
+  imported in the same module. Qualify as `contexts.Context` (pixie) or
+  `autograd.Context` (arraymancer). The qualification is mandatory, not
+  stylistic.
+
+[exn] `except Exception` catches `Defect` in Nim 2.0; use `except CatchableError`
+  Nim 2.0's exception-hierarchy refactor split exceptions: `Defect`
+  (overflow, assertion, access violations — programmer errors that
+  should propagate, not be swallowed) is now a child of `Exception`.
+  So `except Exception as e:` catches bugs you'd rather crash on, and a
+  bare `except:` (which in 2.0 catches only `CatchableError`, not
+  `Defect`) is actually safer than `except Exception`. Standardize every
+  handler to `except CatchableError as e:` — the modern idiom that
+  matches what bare `except:` already does. Caveat: `CatchableError`
+  exists only in Nim 2.0+; compiling the same code with Nim 1.x would
+  fail, since 1.x's hierarchy predates the refactor.
+
+[pixie] `beginPath()` between every shape
+  pixie's `Context` accumulates subpaths in an internal path. Without
+  `ctx.beginPath()` before each new shape, every `fill()` or `stroke()`
+  redraws ALL accumulated subpaths. This causes: (a) opacity stacking —
+  the first shape gets drawn N times (fully opaque), the last shape
+  only once; (b) O(N²) performance. Always call `beginPath()` before
+  starting a new shape, even if the previous one was `fill()`-ed.
+
+[pixie] `Image` is a ref type — don't use `var Image`
+  `Image` in pixie is a reference type. A proc signature
+  `proc foo(img: var Image)` will fail at call sites with "expression
+  is immutable, not var" because the caller passes a reference (already
+  mutable through the ref). Just use `proc foo(img: Image)` — you can
+  mutate the image's contents through the reference.
+
+[pixie] `strokeText` ignores `textBaseline`; use Image-level overloads
+  `ctx.strokeText` always uses `AlphabeticBaseline` regardless of
+  `ctx.textBaseline`, so it won't align with a `ctx.fillText` that uses
+  `MiddleBaseline`. Fix: use the `Image`-level overloads
+  `img.fillText(font, text, transform, hAlign, vAlign)` and
+  `img.strokeText(font, text, transform, strokeWidth, hAlign, vAlign)`
+  — both share one typeset arrangement, so stroke (outline) and fill
+  are inherently aligned.
+
+[pixie] `Color` (float32 0–1) vs `ColorRGBA` (uint8 0–255)
+  Both accepted by `ctx.fillStyle` via the `SomePaint` converter.
+  `color(r, g, b, a)` takes float32 0–1; `rgba(r, g, b, a)` takes
+  uint8 0–255. Be consistent within a proc — mixing them causes
+  off-by-255 errors.
+
+[pixie] `lineWidth` is state on the Context, not per-call
+  `ctx.lineWidth` persists across fill/stroke calls (like HTML canvas).
+  If a constant width applies to many shapes, set it once before the
+  loop. But `fillStyle`/`strokeStyle` must be set per-shape if the
+  color/alpha varies — they're read at draw time, not cached.
+
+[pixie] `pixie` re-exports `vmath` and `fonts` — no extra imports needed
+  `pixie` re-exports `vmath` and `fonts`, so `translate`, `vec2`,
+  `CenterAlign`, `MiddleAlign`, `parseTtf`, `newFont`, `readFont`, and
+  `Font` are all reachable via `import pixie` alone. This is also why
+  the `Context` collision with arraymancer happens: pixie pulls
+  `vmath`'s symbols into scope. Don't add `import vmath` or
+  `import fonts` alongside `import pixie` — it's redundant and can
+  worsen ambiguity.
+
+[arraymancer] `tensor.shape` returns `DynamicStackArray`, not `seq`
+  `shape` returns `Metadata = DynamicStackArray[int]` (fixed-capacity
+  stack array, max 6 dims). `shape[0]` can fail type resolution
+  ("SomeSignedInt or BackwardsIndex"). Use `shape.data[0]` for
+  unambiguous direct access. No `flipAxis`/`flipud` — do manual
+  row-copy loops. Element iteration: `for v in tensor` works
+  (Arraymancer provides `items`). `map` takes a closure:
+  `tensor.map(proc(x: float32): float32 = ...)`.
+
+[arraymancer] `newTensorWith` replaces `np.full`
+  `newTensorWith[float32]([rows, cols], value)` creates and fills in
+  one call. For NaN fill: `newTensorWith[float32]([rows, cols],
+  NaN.float32)`. Note: `NaN.float32` cast is needed because the literal
+  `NaN` is `float64` by default.
+
+[arraymancer] 2D indexing is `[row, col]` not `[row][col]`
+  `tensor[i, j]` works for 2D. `tensor[i][j]` does NOT (returns a
+  1D view, then indexes it — different semantics). Always use
+  comma-separated indices for multi-dimensional access.
+
+[nimhdf5] `distinct string` for path overloads
+  nimhdf5 uses `dset_str` and `grp_str` (both `distinct string`) to
+  disambiguate `h5f["path"]` — one returns `H5DataSet`, the other
+  `H5Group`. Tag strings: `h5f["what".grp_str]` vs
+  `h5f["dataset1/data1/data".dset_str]`. Multi-dimensional datasets are
+  flattened to 1D in row-major order; use `dset.shape` to recover
+  dimensions. The two-arg `h5f[name, uint8]` form takes a plain string.
+
+[nimhdf5] Attribute type coercion is manual — dispatch on `DtypeKind`
+  HDF5 attributes may be stored as float64, float32, int, uint8, etc.
+  You must read with the correct type or get a runtime error. The
+  no-typedesc `attrs["name"]` overload returns a `DtypeKind` enum
+  (`dkString`, `dkCString`, `dkFloat`, `dkFloat32`, `dkFloat64`,
+  `dkInt`, `dkInt16`, `dkInt32`, `dkInt64`, `dkUInt8`, `dkUInt16`,
+  `dkUInt32`, `dkUInt64`, `dkSequence` for array attrs whose element
+  kind is in `dtypeBaseKind`). Case-match on `DtypeKind` to pick the
+  right typedesc for the typed `attrs["name", T]` call. Reading a
+  float64 attribute as `int` fails silently or raises, depending on
+  the nimhdf5 version.
+
+[nimhdf5] `readAs` for cross-type numeric reads
+  `dset.readAs(dtype)` reads a dataset of one numeric type as another
+  (e.g. read a `uint8` dataset as `seq[float32]`). Signature:
+  `proc readAs*[T: SomeNumber](dset: H5DataSet, dtype: typedesc[T]): seq[dtype]`
+  and a one-shot `h5f.readAs(name, dtype)` variant. Without this,
+  you'd manually cast after `read`, which is more error-prone. The
+  plain `read`/`[]` procs enforce `typeMatches` and raise `ValueError`
+  on mismatch — `readAs` is the escape hatch.
+
+[nimhdf5] `H5open` is lazy; `defer: discard close()`
+  `H5open(path, "r")` does NOT traverse the file tree — it's lazy.
+  Access `h5f["path"]` triggers the actual read. Always pair with
+  `defer: discard h5f.close()` so the file handle releases on exit
+  (normal or exception). Without close, the OS keeps the fd open.
+
+[times] `Time` supports direct comparison; `Time()` is the zero sentinel
+  `Time` supports `==`, `>=`, `<` directly — no need for `.toUnix` on
+  both sides. `Time()` (the default constructor) is the zero value
+  (1970-01-01T00:00:00Z), useful as an "uninitialized" sentinel.
+  `toUnix` returns `int64` (Y2038-safe), but `== Time()` is cleaner
+  than `toUnix == 0`.
+
+[times] `initDuration` takes named unit params
+  `initDuration(hours = 24)` is cleaner than
+  `initDuration(seconds = int(24 * 3600.0))`. Available units:
+  `nanoseconds`, `microseconds`, `milliseconds`, `seconds`, `minutes`,
+  `hours`, `days`, `weeks`. Use the appropriate unit; don't convert to
+  seconds manually.
+
+[times] `toTime` vs `toTime()` — overload collision
+  `fromUnix(0)` returns `Time` directly (no `.toTime()` needed).
+  `DateTime.toTime()` converts a `DateTime` to `Time`. Writing
+  `fromUnix(0).toTime()` compiles but is redundant — `fromUnix` already
+  returns `Time`. If you also have a local proc named `toTime`, it can
+  collide with the stdlib's `DateTime.toTime`; prefer distinct names
+  like `mkTime` for test helpers.
+
+[times] Parsing ISO-8601 with 'Z' suffix
+  `parse("2021-07-12T17:33:59.420000Z", "yyyy-MM-dd'T'HH:mm:sszzz")`
+  fails because `zzz` expects `+00:00` format, not `Z`. Rewrite `Z`
+  to `+00:00` before parsing:
+    let t = s.replace("Z", "+00:00")
+    result = parse(t, "yyyy-MM-dd'T'HH:mm:sszzz", utc()).toTime()
+  Pair with a `formatIsoUtc(t: Time)` helper that does the reverse
+  (`t.utc.format("yyyy-MM-dd'T'HH:mm:ss'Z'")`).
+
+[times] `.utc.format` returns string; `.inHours` returns int64
+  `(t1 - t2).inHours` returns `int64` (whole hours, truncated). For
+  fractional hours, use `.inSeconds.float64 / 3600.0`. `.inHours` on
+  a negative duration is negative — useful for "age" calculations
+  (future time → negative age → clamp to 100% opacity).
+
+[times] Fractional seconds in ISO-8601 break `parse` with `sszzz`
+  `parse("2026-07-16T19:36:21.735000+00:00", "yyyy-MM-dd'T'HH:mm:sszzz")`
+  raises `TimeParseError`. After `ss` matches `21`, the parser expects
+  the `zzz` timezone token but hits `.735000` — Nim's `parse` has no
+  format token for fractional seconds (unlike strptime's `%f`). This
+  compounds with the `Z`-suffix trap above: the example timestamp
+  `2021-07-12T17:33:59.420000Z` shown there still fails after the
+  `Z`→`+00:00` rewrite, because the resulting `...59.420000+00:00`
+  chokes on the fractional part. Symptom is silent data loss when the
+  parse is inside a `try/except CatchableError: discard` — every record
+  raises, every record is dropped, the count reads zero, and nothing
+  surfaces unless the `except` branch logs. Fix: strip the fractional
+  substring (from `.` up to but excluding the timezone `+`) before
+  calling `parse`:
+    var t = s.replace("Z", "+00:00")
+    let dot = t.find('.')
+    if dot >= 0:
+      let tzStart = t.find('+', start = dot)
+      if tzStart >= 0:
+        t = t[0 ..< dot] & t[tzStart .. ^1]
+    result = parse(t, "yyyy-MM-dd'T'HH:mm:sszzz", utc()).toTime()
+  Timestamps without a `.` are untouched (the `Z`-only and `+00:00`-only
+  forms still parse). The second `find` starts searching after the dot so
+  it locates the timezone `+`, not a stray `+` earlier in the string
+  (there isn't one in practice, but the pattern is robust).
+
+[times] Fractional-second strip misses `-` timezone offsets
+  The fractional-seconds fix above searches only for `+` after the dot:
+    let tzStart = t.find('+', start = dot)
+  ISO-8601 numeric offsets can be negative (`...21.735000-05:00`); there
+  `find('+')` returns -1, the fractional part survives, and `parse` with
+  `sszzz` raises `TimeParseError`. (The date's own `-` separators are
+  never seen because the search starts after the dot.) Fix: search for
+  both signs — `strutils.find` accepts a `set[char]`:
+    let tzStart = t.find({'+', '-'}, start = dot)
+
+[json] `{}` is null-safe, `[]` is strict
+  `node{"key"}` returns `nil` if the key is missing (safe for optional
+  fields). `node["key"]` raises `KeyError` if missing (use only for
+  required fields). For API responses with optional fields, always use
+  `{}` and nil-check:
+    let n = data{"features"}
+    if n != nil and n.kind == JArray: ...
+
+[json] `getFloat` / `getInt` / `getStr` extract typed values
+  `node.getFloat()` extracts a float from a `JFloat` or `JInt` node.
+  `node.getStr()` extracts a string. These return zero/"" on type
+  mismatch (no raise) — so check `n.kind` first if the field is
+  critical. For numbers stored as strings in the API (e.g. DMI's
+  lightning "direction" field), parse with `parseFloat(n.getStr())`.
+
+[json] Checking `v.kind != JFloat` silently drops integer-valued fields
+  A guard like `if v.kind != JFloat: continue` rejects `JInt`. An API
+  field reporting `"value": 240` (whole-degree direction or integer
+  speed) is silently discarded. But `getFloat()` handles both `JFloat`
+  and `JInt`. Fix: check `v.kind notin {JFloat, JInt}` (or just call
+  `getFloat()` without a kind guard). The trap is that the loss is
+  silent — no error, no warning, just fewer rows.
+
+[json] Building JSON for cache files
+  `newJObject()` + `obj["key"] = newVal` for objects.
+  `newJArray()` + `arr.add(elem)` for arrays.
+  `writeFile(path, $root)` serializes compactly. For cache files, keep
+  the layout simple (arrays of primitives) so `loadCache` can iterate
+  with `for row in data["strikes"]:` and index `row[0].getStr()` etc.
+
+[idiom] Export hygiene — drop `*` from internal-only procs
+  `*` on a proc/type/const marks it as exported (public API). Before
+  freezing a v1.0 API surface, audit every `*` — if a proc is only
+  called within its own module, drop the `*`. Nim lets exported procs
+  return private types (the caller gets the value, just can't name the
+  type), so you can keep a type private while its constructor proc is
+  public.
+
+[idiom] Named constants in a central config module
+  Tunable values (timeouts, sizes, colors, thresholds) belong as
+  `ConstPascalCase*` constants in a central `config.nim`-style module.
+  Bare magic numbers in logic (`180000`, `41000.0`, `1200`,
+  `3.0/4.0`) are maintenance hazards — a future change to one instance
+  won't propagate to the others, and some encode coupling (e.g. a
+  hardcoded aspect ratio that should derive from canvas dimensions).
+
+[idiom] `defer` for resource cleanup
+  `defer: discard h5f.close()` runs when the proc exits (normally or
+  via exception). Use for file handles, connections, locks. Equivalent
+  to Python's `with` / Rust's `Drop`.
+
+[idiom] `result = ` implicit return
+  A proc's `result` variable is the implicit return value. You don't
+  declare it — Nim creates it automatically. `result = X` at the top
+  level of a proc sets the return. `result.add(x)` appends to a
+  `seq` return. Don't also use `return X` — pick one style per proc.
+
+[idiom] Module split over single-file for >500 lines
+  Nim's import system makes cross-module calls explicit. Splitting into
+  modules (e.g. `config`, `geo`, `render`, `radar`) gives: (a) clean
+  boundaries — no accidental reach into private state; (b) incremental
+  compile caching per file; (c) separation of concerns. For a 1,400+
+  line project, 10–12 small modules beats one megafile.
+
+[idiom] `proc` with `var` params for in-place mutation
+  `proc foo(x: var int)` mutates the caller's variable. Use when you
+  need to return multiple values via mutation (e.g. `var j0: int`
+  as a running-index hint that advances in place across calls).
+  Don't use `var` for ref types (Image, seq) — they're already mutable
+  through the reference.
+
+[idiom] `staticRead` for compile-time embedding
+  `const data = staticRead("../file.json")` reads a file at compile time
+  and embeds its contents as a string constant in the binary. Path is
+  relative to the source file (hence `../` from `src/`). At runtime,
+  parse from the string — no file I/O. Makes the binary self-contained.
+
+[idiom] `nimpretty --verify` is the canonical style check
+  `nim check --styleCheck` flags naming conventions (e.g. `'R' should be
+  'r'` for object fields), but `nimpretty --verify` is the authoritative
+  formatter check — if it passes, formatting is canonical (2-space
+  indent, `case/of` alignment, spacing, import grouping). Run
+  `nimpretty --verify src/*.nim` as a CI gate; `nim check --styleCheck`
+  for naming only. They catch different things — use both.
+
+[footgun] `parseopt` doesn't handle `--flag value` (space-separated) cleanly
+  Nim's `parseopt` handles `--flag=value` but the value in
+  `--flag value` ends up as a positional argument in the next
+  iteration. For CLIs accepting both forms, write a manual parser:
+  check if a flag needs a value, consume the next arg if no `=` was
+  present.
+
+[footgun] `discard` required for non-void returns
+  Nim requires explicit `discard` of non-void return values you don't
+  use. `discard existsOrCreateDir(path)` when you don't care whether
+  the dir was created vs already existed. Silent ignoring is a compile
+  error, not a warning.
+
+[footgun] `strformat` float quirks
+  `&"{24.0:.0f}"` produces `"24."` (trailing dot, no digit). This is
+  Nim's `formatFloat` behavior — `.0f` strips decimals but leaves the
+  dot. Cosmetically odd but harmless; the value is correct.
+
+[footgun] `walkFiles` paths need normalization for comparison
+  `walkFiles(pattern)` returns paths that may differ in prefix from
+  paths you construct with `/`. Use `absolutePath` on both sides before
+  comparing, or construct both sides the same way (e.g. both via
+  `DataDir / ...`).
+
+[footgun] `existsOrCreateDir` returns bool; `discard` it if you don't care
+  `existsOrCreateDir(path)` returns `true` if it created the dir,
+  `false` if it already existed. If you just need the dir to exist
+  (idempotent), `discard existsOrCreateDir(path)`. It's safe to call
+  repeatedly — no error if the dir already exists.
+
+[os] `existsOrCreateDir` doesn't create parents; use `createDir` for nested paths
+  `existsOrCreateDir("a/b/c")` raises `OSError` for nested paths — it
+  only creates the final directory, not parents. For nested output
+  paths (e.g. `--outdir a/b/c`), use `createDir` instead: it's
+  recursive and idempotent (no error if the dir already exists, creates
+  all intermediate dirs). The two procs look interchangeable for the
+  single-dir case but diverge silently on nested paths.
+
+[footgun] Float literal default type is `float64`
+  `NaN` is `float64` by default. For `float32` tensors/fields, use
+  `NaN.float32` explicitly. Similarly, `1.0` is `float64`; use
+  `1.0.float32` or `1.0'f32` for float32 contexts. Type inference
+  usually handles this, but explicit casts avoid ambiguity in generic
+  procs.
+
+[footgun] `echo` with `&` (strformat) needs `import strformat`
+  `echo &"val={x}"` requires `import std/strformat`. Without it, the
+  `&` prefix is just a string literal with no interpolation. The
+  compiler doesn't error — it just prints the literal `&"val={x}"`
+  verbatim. Easy to miss in output.
+
+[footgun] Nim's `and`/`or` short-circuit (like C, unlike Python's `and`/`or`)
+  `if a != nil and a.kind == JString:` — short-circuits correctly
+  (if `a` is nil, `a.kind` is never evaluated). This is safe and
+  idiomatic. Don't worry about nil-deref on the right side of `and`.
+
+[footgun] `writeFile` + `parseFile` cache round-trip is not crash-safe
+  `writeFile(path, $json)` truncates and writes in place; a power loss
+  or kill mid-write leaves a truncated file, and the next run's
+  `parseFile(path)` raises `JsonParsingError` — every run thereafter
+  dies on the same corrupt cache until someone deletes it by hand.
+  Fix: write a sibling tmp file and `moveFile` it into place
+  (same-directory rename is atomic on POSIX):
+    let tmp = path & ".tmp"
+    writeFile(tmp, $root)
+    moveFile(tmp, path)
+  and wrap the load in `try/except CatchableError`, treating an
+  unreadable cache as a miss — the next save then self-heals the file.
+
+[http] `getContent` returns the body regardless of HTTP status
+  `httpClient.getContent(url)` (and the async variant) return the
+  response body even for 4xx/5xx — there is no automatic raise. A 404
+  or 500 silently flows downstream and surfaces as a confusing parse
+  error far from the fetch site. Use the lower-level `request()`/
+  `response()` procs and check `response.code().is2xx` (or test
+  `response.status`) before consuming the body. For unattended code
+  hitting network APIs, always validate status at the boundary — never
+  assume a returned body means success.
