@@ -366,13 +366,16 @@ Categories (add new as needed):
   relative to the source file (hence `../` from `src/`). At runtime,
   parse from the string — no file I/O. Makes the binary self-contained.
 
-[idiom] `nimpretty --verify` is the canonical style check
-  `nim check --styleCheck` flags naming conventions (e.g. `'R' should be
-  'r'` for object fields), but `nimpretty --verify` is the authoritative
-  formatter check — if it passes, formatting is canonical (2-space
-  indent, `case/of` alignment, spacing, import grouping). Run
-  `nimpretty --verify src/*.nim` as a CI gate; `nim check --styleCheck`
-  for naming only. They catch different things — use both.
+[idiom] nimpretty reformats in place; verify formatting via diff (no --verify flag)
+  `nim check --styleCheck:error` flags naming conventions (e.g. `'R' should
+  be 'r'` for object fields). `nimpretty` has **no `--verify` flag** in Nim
+  2.x — its only options are help/version/output/outDir/indent/maxLineLen/
+  stdin — and it rewrites files in place. To verify formatting WITHOUT
+  modifying, format a temp copy and `diff` it against the original
+  (non-empty diff ⇒ not canonical); or run `nimpretty src/*.nim` and review
+  the diff. Run `nimpretty src/*.nim` (format) and `nim check
+  --styleCheck:error` (naming) as CI gates — they catch different things,
+  use both.
 
 [footgun] `parseopt` doesn't handle `--flag value` (space-separated) cleanly
   Nim's `parseopt` handles `--flag=value` but the value in

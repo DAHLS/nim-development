@@ -242,15 +242,15 @@ entries in `nim4friends.txt` before touching `--cpu`/`--passC`/`--nimcache`.
 ```
 nim c -r tests/tfoo.nim            # unittest suites
 testament pattern "tests/t*"       # official test runner (categories, spec comments)
-nimpretty src/*.nim                # reformats in place (NO --verify flag exists)
+nimpretty src/*.nim                # reformats files in place
 nim check --styleCheck:error src/...  # naming; needs a value (:error/:hint/:usages)
 ```
 
-`nimpretty` has **no `--verify` mode** in Nim 2.x — it rewrites files in place.
-To *verify* formatting without changing anything, format a temp copy and `diff`
-it against the original (non-empty diff ⇒ not canonical). `nimpretty`
-(formatting) and `nim check --styleCheck:error` (naming) catch **different**
-things — run both. See the `[idiom]` style entry in `nim4friends.txt`.
+`nimpretty` rewrites files in place. To *verify* formatting without changing
+anything, format a temp copy and `diff` it against the original (non-empty
+diff ⇒ not canonical). `nimpretty` (formatting) and `nim check
+--styleCheck:error` (naming) catch **different** things — run both. See the
+`[idiom]` style entry in `nim4friends.txt`.
 
 ## Anti-patterns
 
