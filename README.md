@@ -32,18 +32,6 @@ git clone https://github.com/DAHLS/nim-development.git \
   ~/.config/opencode/skills/nim-development
 ```
 
-A Nim rule you can add to your own global config so the model knows about
-`nim4friends.txt` from the start:
-
-```markdown
-## Nim
-When a task involves Nim (.nim code, nimble, build flags), the `nim-development`
-skill applies. First read
-`/home/amk/.config/opencode/skills/nim-development/references/nim4friends.txt`
-and follow its header rules (apply proactively; append new lessons per its
-ADDING rules, then commit and push).
-```
-
 ## Recording lessons (the important part)
 
 `references/nim4friends.txt` compounds in value only if every session writes
