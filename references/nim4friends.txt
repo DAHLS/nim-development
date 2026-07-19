@@ -483,3 +483,15 @@ Categories (add new as needed):
   `commandLineParams` lives in `std/os` and is NOT auto-imported by
   `std/parseopt`. Fix: `import std/os`, or just call `getopt()` with no
   argument — it defaults to `commandLineParams()` internally.
+
+[nimble] custom `task build` shadows the built-in build (Nim 2.2.4)
+  Defining `task build` in the .nimble SHADOWS nimble's built-in `build`
+  command and fails with a `buildFromDir` / `countLines` parse error when you
+  run `nimble build`. Fix: rely on the built-in `nimble build` (compiles each
+  `bin` from `src/`), or name the task differently (e.g. `task release`).
+
+[nimble] `nimble test` only adds `--path:.` (not `src/`) (Nim 2.2.4)
+  `nimble test` compiles test files with `--path:.` (project root) only, so a
+  test that does `import <pkg>` fails with "cannot open file: <pkg>". Fix:
+  import the library from the test via a relative path (`import ../src/<pkg>`),
+  or add a custom `test` task that passes `--path:src`.

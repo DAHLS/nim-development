@@ -188,6 +188,9 @@ Library or app:
   `build` command and fails with a `buildFromDir`/`countLines` parse error.
   Rely on the built-in `nimble build` (compiles each `bin` from `src/`), or
   name the task differently (e.g. `task release`).
+- `nimble build` is **debug by default** (all runtime checks, no C
+  optimization). For an optimized binary, add a `task release` that runs
+  `nim c -d:release src/<pkg>.nim` — do not reuse the `build` name (above).
 
 ## Concurrency — pick the model
 
@@ -251,6 +254,24 @@ anything, format a temp copy and `diff` it against the original (non-empty
 diff ⇒ not canonical). `nimpretty` (formatting) and `nim check
 --styleCheck:error` (naming) catch **different** things — run both. See the
 `[idiom]` style entry in `nim4friends.txt`.
+
+**Deterministic tests for time/IO/random code.** Don't call `now()`, `rand()`,
+or read the environment *inside* the unit under test — make the dependency an
+injectable parameter (e.g. pass a reference `DateTime`/`Time` into the proc)
+so tests use a fixed value and are reproducible.
+
+## Reading Nim errors
+
+Two compiler errors recur constantly and are easy to misread:
+
+- **`type mismatch … first mismatch at [position]`** — an overload of the proc
+  exists, but your arguments don't bind to it (often a wrong param *order* or
+  a missing default param). Re-read the candidate signature's param list;
+  e.g. `dateTime` is `(year, month, day, h, m, s, nanosecond, zone)` —
+  year-first, with an extra `nanosecond` param.
+- **`undeclared identifier: 'X'`** — you used a symbol without importing its
+  module (Nim does not auto-import most of `std`). Add the `import` (e.g.
+  `commandLineParams` needs `std/os`; `getopt` is in `std/parseopt`).
 
 ## Anti-patterns
 
