@@ -15,7 +15,9 @@
 # 2. Gate — if you can't name the specific Nim API, type, or flag,
 #    you have a principle, not a lesson; principles (DRY, "test your
 #    math", "avoid hardcoded paths") don't belong here. ([idiom]
-#    entries must still name a Nim construct.)
+#    entries must name a Nim construct AND a concrete consequence —
+#    warning, wrong result, compile failure, or footgun. "Cleaner
+#    code" alone is a style preference; reject.)
 # 3. Generalization — strip project/domain references (file names,
 #    endpoints, business terms); preserve the Nim mechanism (library,
 #    signature, type, flag, literal error text — the error string is
