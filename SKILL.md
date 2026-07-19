@@ -16,11 +16,11 @@ Use when a task involves Nim: authoring `.nim` code, `nimble` packaging,
 compile flags, memory-management choices, C interop, or diagnosing compiler
 and runtime errors.
 
-**First, always read `references/nim4friends.txt`** — the authoritative log of
-Nim traps already learned (build flags, exception model,
-pixie/arraymancer/nimhdf5, times/json/http/os, idioms, footguns). Grep it by
-`[category]` tag or error text. It ships in the **same repo as this skill**, so
-it is always present and current — read it in full; do not assume it is empty.
+**First, read `references/nim4friends_rules.md` in full** — it contains the
+reading, adding, and editing rules for the trap log. Then use those rules to
+access `references/nim4friends.txt` (the entries). Both ship in the **same repo
+as this skill**, so they are always present and current — do not assume the
+entries file is empty.
 This skill does **not** repeat those entries; it complements them with
 decision-making and a way to learn *new* traps correctly.
 
@@ -114,8 +114,8 @@ entries.
 
 ### How to record
 
-Append to `references/nim4friends.txt` following **that file's own ADDING
-rules** (read its header before writing). In short:
+Append to `references/nim4friends.txt` following **the ADDING rules in
+`references/nim4friends_rules.md`** (read it in full before writing). In short:
 
 1. **Evidence only** — something you observed or verified this session, never
    from docs or inference alone.
@@ -133,11 +133,11 @@ with — the file forbids it.
 
 ### Close the loop (this repo)
 
-`references/nim4friends.txt` lives in a git repo. After appending, commit and
-push so the lesson reaches your other machines:
+`references/nim4friends.txt` lives in a git repo. After appending (or editing
+the rules file), commit and push so the lesson reaches your other machines:
 
 ```
-git -C ~/.config/opencode/skills/nim-development add references/nim4friends.txt
+git -C ~/.config/opencode/skills/nim-development add references/nim4friends.txt references/nim4friends_rules.md
 git -C ~/.config/opencode/skills/nim-development commit -m "nim4friends: <what you learned>"
 git -C ~/.config/opencode/skills/nim-development push
 ```
@@ -174,9 +174,8 @@ Library or app:
   project.nimble
 ```
 
-- Split into modules once a file grows past ~500 lines (see the `[idiom]`
-  module-split entry in `nim4friends.txt`): cleaner boundaries, per-file
-  compile caching, no accidental reach into private state.
+- Split into modules once a file grows past ~500 lines: cleaner boundaries,
+  per-file compile caching, no accidental reach into private state.
 - The `.nimble` file declares `requires`, `bin`, `srcDir`; `nimble build`,
   `nimble test`, `nimble install` drive it.
 - **`nimble test` only adds `--path:.` (project root) to the import search
@@ -252,8 +251,7 @@ nim check --styleCheck:error src/...  # naming; needs a value (:error/:hint/:usa
 `nimpretty` rewrites files in place. To *verify* formatting without changing
 anything, format a temp copy and `diff` it against the original (non-empty
 diff ⇒ not canonical). `nimpretty` (formatting) and `nim check
---styleCheck:error` (naming) catch **different** things — run both. See the
-`[idiom]` style entry in `nim4friends.txt`.
+--styleCheck:error` (naming) catch **different** things — run both.
 
 **Deterministic tests for time/IO/random code.** Don't call `now()`, `rand()`,
 or read the environment *inside* the unit under test — make the dependency an
@@ -285,14 +283,15 @@ Two compiler errors recur constantly and are easy to misread:
 
 ### ✅ DO
 - `nim --version` first; pin the target version.
-- Read `references/nim4friends.txt` before starting; **record new traps in it
+- Read `references/nim4friends_rules.md` in full, then scan
+  `references/nim4friends.txt`'s `[tag]` titles before starting; **record new traps in it
   (and commit/push) before finishing** — this is mandatory, not optional.
 - Read library source/tests when docs are thin.
 - Choose `--mm`, concurrency model, and build flags for the actual context.
 
 ## Decision checklist
 
-- [ ] Read `nim4friends.txt` for relevant `[tags]`?
+- [ ] Read `nim4friends_rules.md` in full and scanned `nim4friends.txt` `[tag]` titles?
 - [ ] Confirmed the target Nim version?
 - [ ] Verified any uncertain API against a primary source (docs/source/tests)?
 - [ ] Chosen `--mm` deliberately (not by accident)?

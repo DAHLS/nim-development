@@ -10,15 +10,17 @@ behavior changed materially across versions.
 | Path | Purpose |
 |------|---------|
 | `SKILL.md` | Decision-making guidance (memory model, project/nimble structure, concurrency, error handling, build flags, C FFI, testing) and the verify-first research method. Auto-invoked by OpenCode on Nim tasks. |
-| `references/nim4friends.txt` | A persistent, evidence-based log of Nim traps learned across sessions (build flags, exception model, pixie/arraymancer/nimhdf5, times/json/http/os, idioms, footguns). This is the authoritative gotcha reference — extensions to `SKILL.md` point here rather than duplicating it. |
+| `references/nim4friends_rules.md` | Reading, adding, and editing rules for the trap log. Read in full before using `nim4friends.txt`. |
+| `references/nim4friends.txt` | The entries — a persistent, evidence-based log of Nim traps learned across sessions (build flags, exception model, pixie/arraymancer/nimhdf5, times/json/http/os, idioms, footguns). See `nim4friends_rules.md` for rules. |
 | `LICENSE` | GPL-3.0. |
 
 ## How it works in OpenCode
 
 OpenCode reads `SKILL.md` natively from the `skills/` directory. The skill
 triggers automatically when a task involves Nim (`.nim` files, `nimble`, compile
-flags, Nim errors). `references/nim4friends.txt` is read on demand, not loaded
-into context unless something opens it.
+flags, Nim errors). `references/nim4friends_rules.md` is read in full;
+`references/nim4friends.txt` is grepped on demand, not loaded into context
+unless something opens it.
 
 The companion OpenCode Skills Collection plugin only manages
 `*-category-pointer` folders — it never touches this folder.
@@ -36,12 +38,13 @@ git clone https://github.com/DAHLS/nim-development.git \
 
 `references/nim4friends.txt` compounds in value only if every session writes
 down what it learned. When you hit a Nim error, a silently-wrong result, or a
-version-specific behavior, append the lesson **per the file's own ADDING rules**,
-then commit and push so it reaches other machines:
+version-specific behavior, append the lesson **per the rules in
+`references/nim4friends_rules.md`**, then commit and push so it reaches other
+machines:
 
 ```bash
 cd ~/.config/opencode/skills/nim-development
-git add references/nim4friends.txt
+git add references/nim4friends.txt references/nim4friends_rules.md
 git commit -m "nim4friends: <what you learned>"
 git push
 ```
