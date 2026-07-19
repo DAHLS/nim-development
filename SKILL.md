@@ -40,7 +40,7 @@ memory alone — anchor to the version and confirm against a primary source.
 ### 1. Anchor to the version first
 
 ```
-nim --version      # this machine: Nim 2.2.4
+nim --version
 ```
 
 Nim docs are versioned; an idiom that is correct on `devel` may not compile on
