@@ -327,16 +327,17 @@ Categories (add new as needed):
   type), so you can keep a type private while its constructor proc is
   public.
 
-[idiom] `defer` for resource cleanup
-  `defer: discard h5f.close()` runs when the proc exits (normally or
-  via exception). Use for file handles, connections, locks. Equivalent
-  to Python's `with` / Rust's `Drop`.
+[idiom] `defer` runs on exception exit — manual cleanup leaks on throw
+  `defer: discard h5f.close()` runs when the proc exits, INCLUDING via
+  exception. Manual cleanup before a `return` doesn't, so it leaks on
+  throw. Use `defer` for file handles, connections, locks. Equivalent to
+  Python's `with` / Rust's `Drop`.
 
-[idiom] `result = ` implicit return
-  A proc's `result` variable is the implicit return value. You don't
-  declare it — Nim creates it automatically. `result = X` at the top
-  level of a proc sets the return. `result.add(x)` appends to a
-  `seq` return. Don't also use `return X` — pick one style per proc.
+[idiom] `result = X` and `return Y` don't mix — `return` silently wins
+  A proc's `result` variable is the implicit return (Nim creates it
+  automatically; `result = X` sets it, `result.add(x)` appends to a `seq`
+  return). But `return Y` short-circuits — if both appear, `return Y`
+  wins and `result` is silently discarded. Pick one per proc; don't mix.
 
 [idiom] `proc` with `var` params for in-place mutation
   `proc foo(x: var int)` mutates the caller's variable. Use when you
