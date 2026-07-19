@@ -19,9 +19,10 @@ and runtime errors.
 **First, always read `references/nim4friends.txt`** — the authoritative log of
 Nim traps already learned (build flags, exception model,
 pixie/arraymancer/nimhdf5, times/json/http/os, idioms, footguns). Grep it by
-`[category]` tag or error text. This skill does **not** repeat those entries;
-it complements them with decision-making and a way to learn *new* traps
-correctly.
+`[category]` tag or error text. It ships in the **same repo as this skill**, so
+it is always present and current — read it in full; do not assume it is empty.
+This skill does **not** repeat those entries; it complements them with
+decision-making and a way to learn *new* traps correctly.
 
 **And, non-negotiably, feed lessons back into it** — see
 [Recording lessons](#recording-lessons-mandatory). The value of this file
@@ -178,6 +179,15 @@ Library or app:
   compile caching, no accidental reach into private state.
 - The `.nimble` file declares `requires`, `bin`, `srcDir`; `nimble build`,
   `nimble test`, `nimble install` drive it.
+- **`nimble test` only adds `--path:.` (project root) to the import search
+  path, NOT `src/`** — so a test file that does `import <pkg>` fails with
+  "cannot open file: <pkg>". Import the library from a test via a relative
+  path (`import ../src/<pkg>`) or add a custom `test` task that passes
+  `--path:src`.
+- **Do not define a custom `task build`** — it shadows nimble's built-in
+  `build` command and fails with a `buildFromDir`/`countLines` parse error.
+  Rely on the built-in `nimble build` (compiles each `bin` from `src/`), or
+  name the task differently (e.g. `task release`).
 
 ## Concurrency — pick the model
 
@@ -230,14 +240,17 @@ entries in `nim4friends.txt` before touching `--cpu`/`--passC`/`--nimcache`.
 ## Testing & style (CI gates)
 
 ```
-nim c -r tests/tfoo.nim        # unittest suites
-testament pattern "tests/t*"   # official test runner (categories, spec comments)
-nimpretty --verify src/*.nim   # authoritative formatting gate
-nim check --styleCheck src/... # naming conventions only
+nim c -r tests/tfoo.nim            # unittest suites
+testament pattern "tests/t*"       # official test runner (categories, spec comments)
+nimpretty src/*.nim                # reformats in place (NO --verify flag exists)
+nim check --styleCheck:error src/...  # naming; needs a value (:error/:hint/:usages)
 ```
 
-`nimpretty --verify` and `nim check --styleCheck` catch **different** things —
-run both. See the `[idiom]` style entry in `nim4friends.txt`.
+`nimpretty` has **no `--verify` mode** in Nim 2.x — it rewrites files in place.
+To *verify* formatting without changing anything, format a temp copy and `diff`
+it against the original (non-empty diff ⇒ not canonical). `nimpretty`
+(formatting) and `nim check --styleCheck:error` (naming) catch **different**
+things — run both. See the `[idiom]` style entry in `nim4friends.txt`.
 
 ## Anti-patterns
 
@@ -265,7 +278,7 @@ run both. See the `[idiom]` style entry in `nim4friends.txt`.
 - [ ] Picked the right concurrency model (I/O vs CPU)?
 - [ ] Selected build flags for this context (release keeps checks)?
 - [ ] Handlers use `except CatchableError`?
-- [ ] Ran `nimpretty --verify` and `nim check --styleCheck`?
+- [ ] Ran `nimpretty` (format) and `nim check --styleCheck:error`?
 - [ ] **Recorded any newly-learned trap** in `references/nim4friends.txt` and committed/pushed it? (mandatory if you hit an error, a silent-wrong result, or a version-specific behavior — see [Recording lessons](#recording-lessons-mandatory))
 
 ## Limitations
