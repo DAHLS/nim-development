@@ -356,8 +356,7 @@ Categories (add new as needed):
   `nimpretty` rewrites files in place. To verify formatting WITHOUT
   modifying, format a temp copy and `diff` it against the original
   (non-empty diff ⇒ not canonical); or run `nimpretty src/*.nim` and
-  review the diff. Pair with `nim check --styleCheck:error` (naming) as
-  CI gates — they catch different things, use both.
+  review the diff.
 
 [footgun] `parseopt` doesn't handle `--flag value` (space-separated) cleanly
   Nim's `parseopt` handles `--flag=value` but the value in
