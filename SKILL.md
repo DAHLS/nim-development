@@ -1,6 +1,7 @@
 ---
 name: nim-development
 description: "Nim development decisions and how to find current, version-correct Nim info. Use when writing, building, or debugging Nim (.nim files, nimble, compile flags, mm/GC choices, C FFI, Nim compiler errors), or when unsure whether a Nim API or idiom is current."
+license: GPL-3.0
 risk: safe
 ---
 
@@ -101,7 +102,15 @@ method.
 re-hitting a trap you already paid for. A lesson learned and not written down is
 wasted.
 
-### When to record — if ANY of these happened this session, you MUST append
+### When to record — mechanical trigger
+
+If the Nim compiler or runtime emitted **any error or warning you fixed**, a
+test failed then passed, or a result was wrong then corrected — at least one
+entry is mandatory. Zero entries after such a session is a violation, not an
+option. If none of that happened, there is nothing to record — do not invent
+entries.
+
+Qualifying events:
 
 - A Nim **compile error or runtime crash** you had to diagnose.
 - A result that was **silently wrong** (parsed to zero, dropped rows, off-by-N).
@@ -109,8 +118,26 @@ wasted.
 - A **library/API surprise** where the obvious usage was wrong and you found the
   right one by reading source/tests.
 
-If none of the above occurred, there is nothing to record — do not invent
-entries.
+### Rationalizations that mean "record it now"
+
+| Excuse | Reality |
+|---|---|
+| "Too basic — everyone knows X needs import Y" | Basic is model- and version-dependent; the next session may not know. If it cost a compile cycle, it qualifies. |
+| "One-cycle fix — I didn't really diagnose it" | The trigger is *hitting and fixing* an error, not effort spent. A 30-second fix is 30 seconds saved in every future session. |
+| "It's a principle, not a lesson" | The gate rejects entries that can't name the API **and** quote the literal error/wrong behavior. If you can quote both, it passes by definition. The gate filters style opinions, not small traps. |
+| "Already covered by entry X" | The placement rule says *extend by reference* ("extends the X entry"), not skip. |
+| "SKILL.md already warns about this" | Then hitting it anyway proves the warning didn't land — record the trap (and consider fixing the skill). |
+| "Not version-specific" | Version stamps annotate version-dependent behavior; plain traps still belong. |
+| "I'll record it at the end" | Only if you copy the literal error text the moment you hit it — end-of-session recall paraphrases, and the error string is the grep key. |
+
+### Red flags — STOP and record
+
+- "too basic" / "everyone knows"
+- "one-line fix"
+- "same class as entry X"
+- "I'll remember it"
+
+**All of these mean: append the entry now.**
 
 ### How to record
 

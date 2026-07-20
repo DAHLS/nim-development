@@ -31,7 +31,9 @@ Titles are the awareness layer; bodies are the detail layer.
    "avoid hardcoded paths") don't belong here. (`[idiom]` entries must
    name a Nim construct AND a concrete consequence — warning, wrong
    result, compile failure, or footgun. "Cleaner code" alone is a style
-   preference; reject.)
+   preference; reject.) The gate filters principles, not small traps: if
+   you can name the API AND quote the literal error or wrong behavior, the
+   entry passes — "too basic" is not a rejection criterion.
 3. **Generalization** — strip project/domain references (file names,
    endpoints, business terms); preserve the Nim mechanism (library,
    signature, type, flag, literal error text — the error string is the

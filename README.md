@@ -52,6 +52,21 @@ git push
 Never reorder, reformat, condense, or delete entries you merely disagree with.
 Correct factually-wrong entries in place.
 
+## Maintaining this skill
+
+- **Validate after frontmatter edits** — run the official checker from
+  `agentskills/agentskills`:
+  `skills-ref validate ~/.config/opencode/skills/nim-development`
+- **`risk:` frontmatter field** is a local house convention (every skill in
+  `~/.config/opencode/skills/` carries it). Spec-compliant loaders ignore
+  unknown fields. If this skill is ever published, move it under the spec's
+  `metadata:` mapping.
+- **Smoke-test after SKILL.md changes** — run a fresh agent session on a
+  small Nim task and watch whether the guidance lands. A prompt that has
+  worked: "plan a Nim CLI that takes a date (YYYY/MM/DD) and prints seconds
+  from now to that date, leap-year correct". Check: rules file read first?
+  Known traps avoided on the first attempt? New lessons appended and pushed?
+
 ## License
 
 GPL-3.0. See `LICENSE`.
