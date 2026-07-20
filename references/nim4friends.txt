@@ -445,3 +445,17 @@
       import std/os
       let params = commandLineParams()
   Keeps the library build warning-free and the CLI build functional.
+
+[times] `DateTime.hour/minute/second` return distinct range types, not int (Nim 2.2.4)
+  `(t.hour, t.minute, t.second) == (13, 45, 12)` fails to compile:
+  "type mismatch ... first mismatch at [position]" — the left tuple is
+  (HourRange, MinuteRange, SecondRange) and the generic tuple `==` requires
+  both sides to be the same type. Fix: convert each field with `.int`:
+    check (t.hour.int, t.minute.int, t.second.int) == (13, 45, 12)
+
+[footgun] `split` needs `import std/strutils` (Nim 2.2.4)
+  A module importing only `std/times` that calls `s.split('/')` fails with
+  "Error: attempting to call undeclared routine: 'split'". Nim auto-imports
+  only `system`; `split`/`parseInt` live in `std/strutils`. Same trap class
+  as the commandLineParams/std/os entry — fix is to add the import:
+    import std/strutils
