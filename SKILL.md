@@ -115,21 +115,7 @@ entries.
 ### How to record
 
 Append to `references/nim4friends.txt` following **the ADDING rules in
-`references/nim4friends_rules.md`** (read it in full before writing). In short:
-
-1. **Evidence only** — something you observed or verified this session, never
-   from docs or inference alone.
-2. **Gate** — you must be able to name the specific Nim API, type, or flag; a
-   vague principle is not a lesson.
-3. **Generalize** — strip project/file/business names; keep the Nim mechanism
-   and the literal error string (it is the next debugger's grep key).
-4. **Shape** — `[tag] one-line title → trap → symptom → fix`, ≤15 lines, with
-   the minimal snippet showing the fix.
-5. **Placement** — grep for the API/flag first; extend an existing entry instead
-   of duplicating. Correct an entry in place if it is factually wrong.
-
-Do **not** reorder, reformat, condense, or delete entries you merely disagree
-with — the file forbids it.
+`references/nim4friends_rules.md`** (read it in full before writing).
 
 ### Close the loop (this repo)
 
@@ -280,14 +266,6 @@ Two compiler errors recur constantly and are easy to misread:
 - Assume `-d:release` removes bounds/overflow checks.
 - Use threads for an I/O-bound problem.
 - Guess a sparse-doc library's API instead of reading its `tests/`.
-
-### ✅ DO
-- `nim --version` first; pin the target version.
-- Read `references/nim4friends_rules.md` in full, then scan
-  `references/nim4friends.txt`'s `[tag]` titles before starting; **record new traps in it
-  (and commit/push) before finishing** — this is mandatory, not optional.
-- Read library source/tests when docs are thin.
-- Choose `--mm`, concurrency model, and build flags for the actual context.
 
 ## Decision checklist
 
