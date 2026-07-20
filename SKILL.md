@@ -164,18 +164,14 @@ Library or app:
   per-file compile caching, no accidental reach into private state.
 - The `.nimble` file declares `requires`, `bin`, `srcDir`; `nimble build`,
   `nimble test`, `nimble install` drive it.
-- **`nimble test` only adds `--path:.` (project root) to the import search
-  path, NOT `src/`** — so a test file that does `import <pkg>` fails with
-  "cannot open file: <pkg>". Import the library from a test via a relative
-  path (`import ../src/<pkg>`) or add a custom `test` task that passes
-  `--path:src`.
-- **Do not define a custom `task build`** — it shadows nimble's built-in
-  `build` command and fails with a `buildFromDir`/`countLines` parse error.
-  Rely on the built-in `nimble build` (compiles each `bin` from `src/`), or
-  name the task differently (e.g. `task release`).
-- `nimble build` is **debug by default** (all runtime checks, no C
-  optimization). For an optimized binary, add a `task release` that runs
-  `nim c -d:release src/<pkg>.nim` — do not reuse the `build` name (above).
+- **`nimble test` doesn't add `src/` to the import path** — import the
+  library from tests via a relative path (`import ../src/<pkg>`) or a
+  custom `test` task with `--path:src`. See the `[nimble]` entries in
+  `nim4friends.txt`.
+- **Never define a custom `task build`** — it shadows nimble's built-in
+  `build` (see `[nimble]`). `nimble build` is **debug by default**; for an
+  optimized binary add `task release` that runs
+  `nim c -d:release src/<pkg>.nim`.
 
 ## Concurrency — pick the model
 
@@ -211,9 +207,8 @@ crashes you'd rather let propagate. See the `[exn]` entry in
 --checks:off  strips checks without the rest of release.
 ```
 
-Note: `-d:release` in Nim does **not** disable checks (unlike Rust's
-`--release`). For cross-compilation and cache pitfalls, see the `[build]`
-entries in `nim4friends.txt` before touching `--cpu`/`--passC`/`--nimcache`.
+For cross-compilation and cache pitfalls, see the `[build]` entries in
+`nim4friends.txt` before touching `--cpu`/`--passC`/`--nimcache`.
 
 ## C FFI / interop
 
@@ -253,9 +248,11 @@ Two compiler errors recur constantly and are easy to misread:
   a missing default param). Re-read the candidate signature's param list;
   e.g. `dateTime` is `(year, month, day, h, m, s, nanosecond, zone)` —
   year-first, with an extra `nanosecond` param.
-- **`undeclared identifier: 'X'`** — you used a symbol without importing its
-  module (Nim does not auto-import most of `std`). Add the `import` (e.g.
-  `commandLineParams` needs `std/os`; `getopt` is in `std/parseopt`).
+- **`undeclared identifier: 'X'` / `attempting to call undeclared routine:
+  'X'`** — you used a symbol without importing its module (Nim does not
+  auto-import most of `std`). Add the `import` (e.g. `commandLineParams`
+  needs `std/os`; `getopt` is in `std/parseopt`; `split` is in
+  `std/strutils`).
 
 ## Anti-patterns
 
