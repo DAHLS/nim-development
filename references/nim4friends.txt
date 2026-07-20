@@ -461,3 +461,12 @@
   only `system`; `split`/`parseInt` live in `std/strutils`. Same trap class
   as the commandLineParams/std/os entry — fix is to add the import:
     import std/strutils
+
+[times] `parse` DOES reject impossible calendar dates; `dateTime` does not (Nim 2.2.4)
+  `parse("2025/02/29", "yyyy/MM/dd")` raises "Failed to parse '2025/02/29'
+  with format 'yyyy/MM/dd'. 2025-02-29 is not a valid date" — input via
+  `parse` is calendar-validated for free. `dateTime(2025, mFeb, 29, ...)`
+  instead silently normalizes to Mar 1 (see the dateTime-validation
+  entry). Consequence: the leap-aware `daysInMonth` pre-check is only
+  skippable when ALL date input flows through `parse`; any direct
+  `dateTime` construction still needs it.
