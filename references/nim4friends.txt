@@ -1,3 +1,5 @@
+# READ: grep '^\[' for entry titles, then read bodies by [tag]. WRITE: read nim4friends_rules.md in full before adding/editing.
+
 [build] `-d:ssl` for HTTPS, `-d:H5_FUTURE` for HDF5 1.14+
   Nim's stdlib HTTP client excludes SSL by default — pass `-d:ssl` at
   compile time to link OpenSSL. Any HTTPS API will fail without it.

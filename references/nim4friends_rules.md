@@ -5,12 +5,21 @@ projects, maintained across many LLM sessions and models.
 
 ## Reading
 
-Read this file in full — it is short and stable. For entries in
-`nim4friends.txt`, `grep -n '^\['` lists every `[tag]` title with line
-numbers for proactive awareness. For `[tags]` relevant to your task, read
-those entries in full (use the line numbers to target them). When
-debugging, grep by `[tag]` and error text. Titles are the awareness
-layer; bodies are the detail layer.
+Read this file in full — it is short and stable.
+
+For `nim4friends.txt`, choose by size (check with `wc -l`):
+
+- **Under ~1000 lines** — reading the file in full is fine. The context
+  cost is small and full awareness of all entries can help.
+- **Over ~1000 lines** — do NOT read it in full. `grep -n '^\['` lists
+  every `[tag]` title with line numbers; read only the bodies for `[tag]`s
+  relevant to your task. The grep-first discipline exists for this scale —
+  at small sizes skipping it is harmless, at large sizes it's what keeps
+  the file usable.
+- **Debugging at any size** — grep by `[tag]` and error text to jump
+  straight to relevant entries.
+
+Titles are the awareness layer; bodies are the detail layer.
 
 ## Adding an entry
 

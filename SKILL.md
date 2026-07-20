@@ -269,7 +269,7 @@ Two compiler errors recur constantly and are easy to misread:
 
 ## Decision checklist
 
-- [ ] Read `nim4friends_rules.md` in full and scanned `nim4friends.txt` `[tag]` titles?
+- [ ] Read `nim4friends_rules.md` in full; accessed `nim4friends.txt` per its Reading rules (full if small, title-scan if large)?
 - [ ] Confirmed the target Nim version?
 - [ ] Verified any uncertain API against a primary source (docs/source/tests)?
 - [ ] Chosen `--mm` deliberately (not by accident)?
